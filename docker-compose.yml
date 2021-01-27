@@ -1,0 +1,46 @@
+version: "3"
+services: 
+
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        restart: unless-stopped
+        depends_on:
+            - "postgres_image"
+        container_name: app
+        ports:
+            - "5000:5000"
+        environment:
+            DB_CONNECTION_STRING: "host= host.docker.internal;port=5432;database=mydb;username=master;password=yesmaster"
+        networks:
+            - inner 
+
+    postgres_image:
+        image: postgres:latest
+        ports:
+            - "5432:5432"
+        restart: always
+        volumes:
+            #- ./db_volume:/var/lib/postgresql/data
+            - ./docs/dbscripts/seed.sql :/docker-entrypoint-initdb.d/seed.sql
+        environment:
+            POSTGRES_USER: "master"
+            POSTGRES_PASSWORD: "yesmaster"
+            POSTGRES_DB: "mydb"
+
+    nginx: 
+        image: nginx:latest
+        restart: unless-stopped
+        container_name: nginx
+        ports: 
+            - "80:80"
+            - "443:443"
+        volumes: 
+            - ./docs/nginx/default.conf:/etc/nginx/conf.d/default.conf
+        networks:
+            - inner 
+
+networks:
+    inner:
+        external: false
